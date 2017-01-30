@@ -22,7 +22,7 @@ import java.util.*;
  */
 
 public class Arkanoid extends ApplicationAdapter implements InputProcessor{
-	public static final int NUM_LEVELS = 2;
+	public static final int NUM_LEVELS = 3;
 	
 	SpriteBatch batch;
 	Ball ball;
@@ -36,23 +36,25 @@ public class Arkanoid extends ApplicationAdapter implements InputProcessor{
 	//TEXTURES AND SPRITES
 	Texture[] brickSprites; //brick textures based on durability
 	Texture menuBG;
-	Texture playButton;
+	Texture playButton; //all the buttons
 	Texture playButtonHover;
-	Texture ballsEffectSym;
+	Texture controlsButton;
+	Texture controlsButtonHover;
+	Texture ballsEffectSym; //all the symbols for special bricks
 	Texture lifeEffectSym;
 	Texture bigEffectSym;
 	Texture smallEffectSym;
 	Texture fastEffectSym;
 	Texture slowEffectSym;
-	Texture[] backgrounds;
+	Texture[] backgrounds; //backgrounds for game
 	Texture pausedSign;
 	Texture vicScreen;
 	Texture deadScreen;
+	Texture controlsScreen;
 	Sprite ballSprite;
 	Sprite platSprite;
 	
 	double platx,platy,platwidth,platheight; //platform x and y and width and height
-	Rectangle platRect;
 	
 	boolean onPlat; //is ball sitting on the platform?
 	boolean paused; //is game paused?
@@ -70,7 +72,9 @@ public class Arkanoid extends ApplicationAdapter implements InputProcessor{
 	Sound brickHit;
 	
 	//Rectangles
-	Rectangle playRect;
+	Rectangle playRect; //playButton rectangle
+	Rectangle controlsRect; //controlsButton rectangle
+	Rectangle platRect; //platform rectangle
 	@Override
 	public void create () {
 		//Input
@@ -102,6 +106,8 @@ public class Arkanoid extends ApplicationAdapter implements InputProcessor{
 		menuBG = new Texture("menu.png");
 		playButton = new Texture("playButton.png");
 		playButtonHover = new Texture("playButtonHover.png");
+		controlsButton = new Texture("controlsButton.png");
+		controlsButtonHover = new Texture("controlsButtonHover.png");
 		ballsEffectSym = new Texture("ballSymbol.png");
 		lifeEffectSym = new Texture("lifeSymbol.png");
 		bigEffectSym = new Texture("bigSymbol.png");
@@ -115,8 +121,10 @@ public class Arkanoid extends ApplicationAdapter implements InputProcessor{
 		}
 		vicScreen = new Texture("victoryScreen.png");
 		deadScreen = new Texture("deadScreen.jpg");
+		controlsScreen = new Texture("controlScreen.png");
 		//sets important rectangles
-		playRect = new Rectangle(335,100,256,128);
+		playRect = new Rectangle(158,100,256,128);
+		controlsRect = new Rectangle(542,100,256,128);
 	}
 
 	@Override
@@ -125,18 +133,33 @@ public class Arkanoid extends ApplicationAdapter implements InputProcessor{
 			Gdx.gl.glClearColor(0,0,0,1);
 			Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 			batch.begin();
-			batch.draw(menuBG, 0, -384);
-			if(playRect.contains(getMx(),getMy())){
-				batch.draw(playButtonHover, 335, 100);
+			batch.draw(menuBG, 0, -384); //menu background
+			//draws buttons
+			if(playRect.contains(getMx(),getMy())){ //handles if buttons are hovered over
+				batch.draw(playButtonHover, playRect.x, playRect.y);
 			} else{
-				batch.draw(playButton, 335, 100);
+				batch.draw(playButton, playRect.x, playRect.y);
+			}
+			if(controlsRect.contains(getMx(),getMy())){
+				batch.draw(controlsButtonHover, controlsRect.x, controlsRect.y);
+			} else{
+				batch.draw(controlsButton, controlsRect.x, controlsRect.y);
 			}
 			batch.end();
 			String buttonClicked = checkClick(); //checks for button clicks
 			if(buttonClicked.equals("play")){ //if the user clicks play
 				startGame();
+			} else if(buttonClicked.equals("controls")){
+				mode = "controls";
 			}
-		} if(mode.equals("victory")){
+		} else if(mode.equals("controls")){
+			//handles controls menu
+			Gdx.gl.glClearColor(0, 0, 0, 1);
+			Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+			batch.begin();
+			batch.draw(controlsScreen, 0, 0);
+			batch.end();
+		}else if(mode.equals("victory")){
 			//handles victory screen
 			Gdx.gl.glClearColor(0, 0, 0, 1);
 			Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -188,7 +211,6 @@ public class Arkanoid extends ApplicationAdapter implements InputProcessor{
 			time++;
 		}
 	}
-	
 	//user interaction methods
 	public float getMx(){
 		return Gdx.input.getX();
@@ -198,9 +220,13 @@ public class Arkanoid extends ApplicationAdapter implements InputProcessor{
 	}
 	public String checkClick(){
 		//returns which button is clicked on menu
-		if(Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
-			if(playRect.contains(getMx(),getMy())){
-				return "play";
+		if(mode.equals("menu")){
+			if(Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
+				if(playRect.contains(getMx(),getMy())){
+					return "play";
+				} else if(controlsRect.contains(getMx(),getMy())){
+					return "controls";
+				}
 			}
 		}
 		return "";
@@ -429,6 +455,14 @@ public class Arkanoid extends ApplicationAdapter implements InputProcessor{
 				}
 			}
 			quota = 0;
+		} else if(level == 3){
+			//draws level 3
+			for(int i = 0; i < 5; i++){
+				for(int j = 0;j < 15 - i%2;j++){
+					bricks.add(new Brick(j*66+32*(i%2),320+i*32,64,32,i+1));
+				}
+			}
+			quota = 0;
 		} else{
 			mode = "victory";
 			savePoint = -1; //resets savePoint so victory can use it again
@@ -599,6 +633,10 @@ public class Arkanoid extends ApplicationAdapter implements InputProcessor{
 			}
 			if(keycode == Keys.P){
 				paused = !paused;
+			}
+		} else if(mode.equals("controls")){
+			if(keycode == Keys.ESCAPE || keycode == Keys.X || keycode == Keys.BACKSPACE){
+				mode = "menu"; //goes back to menu upon escape x or backspace
 			}
 		}
 		//CHEATS
